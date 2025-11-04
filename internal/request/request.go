@@ -60,7 +60,7 @@ func ParseRequestLine(b []byte) (*RequestLine, int, error) {
 
 	rl := &RequestLine{
 		Method:        string(parts[0]),
-		RequestTarget: string(parts[0]),
+		RequestTarget: string(parts[1]),
 		HttpVersion:   string(httpParts[1]),
 	}
 	return rl, read, nil
