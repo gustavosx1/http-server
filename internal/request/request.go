@@ -1,9 +1,12 @@
+// Package request
 package request
 
 import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"go-http/internal/headers"
 )
 
 type RequestLine struct {
@@ -16,11 +19,19 @@ type parserState string
 
 type Request struct {
 	RequestLine RequestLine
+	Headers     *headers.Headers
 	State       parserState
 }
 
+func newRequest() *Request {
+	return &Request{
+		State:   StateInit,
+		Headers: headers.NewHeaders(),
+	}
+}
+
 var (
-	ERROR_BAD_STATE              = fmt.Errorf("Erro no estado da request line")
+	ERROR_BAD_STATE              = fmt.Errorf("erro no estado da request line")
 	ERROR_BAD_HTTP_VERSION       = fmt.Errorf("versão http diferente da HTTP/1.1")
 	ERROR_MALFORMED_REQUEST_LINE = fmt.Errorf("linha de request (Metodo, caminho, ou protocolo faltando) errado")
 	ERROR_BAD_START_LINE         = fmt.Errorf("começo de Linha errado")
@@ -28,16 +39,11 @@ var (
 )
 
 const (
-	StateError parserState = "error"
-	StateInit  parserState = "init"
-	StateDone  parserState = "done"
+	StateError   parserState = "error"
+	StateHeaders parserState = "headers"
+	StateInit    parserState = "init"
+	StateDone    parserState = "done"
 )
-
-func newRequest() *Request {
-	return &Request{
-		State: StateInit,
-	}
-}
 
 func ParseRequestLine(b []byte) (*RequestLine, int, error) {
 	idx := bytes.Index(b, SEPARADOR)
@@ -76,23 +82,45 @@ func (r *Request) error() bool {
 
 func (r *Request) parse(data []byte) (int, error) {
 	read := 0
+	currentData := data[read:]
 outer:
-	switch r.State {
-	case StateError:
-		return 0, ERROR_BAD_STATE
-	case StateInit:
-		rl, n, err := ParseRequestLine(data[read:])
-		if err != nil {
-			return 0, nil
-		}
-		if n == 0 {
+	for {
+		switch r.State {
+
+		case StateError:
+			return 0, ERROR_BAD_STATE
+
+		case StateInit:
+			rl, n, err := ParseRequestLine(currentData)
+			if err != nil {
+				return 0, err
+			}
+			if n == 0 {
+				break outer
+			}
+			r.RequestLine = *rl
+			read += n
+			r.State = StateHeaders
+
+		case StateHeaders:
+			n, done, err := r.Headers.Parse(currentData)
+			if err != nil {
+				return 0, err
+			}
+			if n == 0 {
+				break outer
+			}
+			read += n
+			if done {
+				r.State = StateDone
+			}
+
+		case StateDone:
 			break outer
+
+		default:
+			panic("Estado Indefinido")
 		}
-		r.RequestLine = *rl
-		read += n
-		r.State = StateDone
-	case StateDone:
-		break outer
 	}
 	return read, nil
 }
