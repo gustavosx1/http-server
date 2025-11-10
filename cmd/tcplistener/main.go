@@ -23,14 +23,19 @@ func main() {
 			log.Fatalf("Error: %v", err)
 		}
 		fmt.Printf("Request Line:\n")
-		fmt.Printf("Method: %s\n", r.RequestLine.Method)
-		fmt.Printf("Target: %s\n", r.RequestLine.RequestTarget)
-		fmt.Printf("HTTP Version: %s\n", r.RequestLine.HttpVersion)
+		fmt.Printf("  -Method: %s\n", r.RequestLine.Method)
+		fmt.Printf("  -Target: %s\n", r.RequestLine.RequestTarget)
+		fmt.Printf("  -HTTP Version: %s\n", r.RequestLine.HTTPVersion)
 
 		fmt.Printf("Header:\n")
 		r.Headers.ForEach(func(n, v string) {
-			fmt.Printf("- %s: %s", n, v)
+			fmt.Printf("  - %s: %s\n", n, v)
 		})
 
+		fmt.Printf("Body:\n")
+
+		fmt.Printf("  -%s\n", string(r.Body))
+
+		fmt.Println("_______________________________________________________________")
 	}
 }

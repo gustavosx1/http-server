@@ -4,7 +4,6 @@ package headers
 import (
 	"bytes"
 	"fmt"
-	"log/slog"
 	"strings"
 )
 
@@ -31,6 +30,11 @@ func (h *Headers) Set(name, value string) {
 	} else {
 		h.headers[name] = value
 	}
+}
+
+func (h *Headers) Replace(name, value string) {
+	name = strings.ToLower(name)
+	h.headers[name] = value
 }
 
 func validaToken(str []byte) bool {
@@ -63,7 +67,6 @@ func (h *Headers) ForEach(cb func(n, v string)) {
 
 func parseHeader(fieldLine []byte) (string, string, error) {
 	parts := bytes.SplitN(fieldLine, []byte(":"), 2)
-	slog.Info("parseHeader", "fieldLine", string(fieldLine))
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("linha Malformatada")
 	}
